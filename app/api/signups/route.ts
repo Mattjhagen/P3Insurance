@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import getDb from '@/lib/db';
 import { completeReferral, getUserByReferralCode } from '@/lib/referral';
 
 export async function POST(request: NextRequest) {
@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save the signup
+    const db = getDb();
     const stmt = db.prepare(`
       INSERT INTO signups (user_email, company_name, referral_code, status)
       VALUES (?, ?, ?, 'completed')

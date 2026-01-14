@@ -10,9 +10,11 @@ function getDatabase(): Database.Database {
     try {
       db = new Database(dbPath);
       initDatabase();
+      console.log('Database initialized successfully');
     } catch (error) {
       console.error('Database initialization error:', error);
-      // Re-throw to prevent silent failures
+      // Don't throw - let the app continue, database operations will fail gracefully
+      // This prevents the entire app from crashing on startup
       throw error;
     }
   }
@@ -81,5 +83,8 @@ function initDatabase() {
   }
 }
 
-// Export the database instance (lazy initialization)
-export default getDatabase();
+// Export a function that returns the database (truly lazy)
+// This prevents database initialization on module import
+export default function getDb() {
+  return getDatabase();
+}

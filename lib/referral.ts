@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
-import db from './db';
+import getDb from './db';
 
 export function generateReferralCode(): string {
   return uuidv4().substring(0, 8).toUpperCase();
 }
 
 export function createUser(email: string): { id: number; referralCode: string } {
+  const db = getDb();
   const referralCode = generateReferralCode();
   
   const stmt = db.prepare('INSERT INTO users (email, referral_code) VALUES (?, ?)');
@@ -18,16 +19,19 @@ export function createUser(email: string): { id: number; referralCode: string } 
 }
 
 export function getUserByEmail(email: string) {
+  const db = getDb();
   const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
   return stmt.get(email) as { id: number; email: string; referral_code: string; created_at: string } | undefined;
 }
 
 export function getUserByReferralCode(referralCode: string) {
+  const db = getDb();
   const stmt = db.prepare('SELECT * FROM users WHERE referral_code = ?');
   return stmt.get(referralCode) as { id: number; email: string; referral_code: string; created_at: string } | undefined;
 }
 
 export function createReferral(referrerId: number, referredEmail: string, referralCode: string) {
+  const db = getDb();
   const stmt = db.prepare(`
     INSERT INTO referrals (referrer_id, referred_email, referral_code, status)
     VALUES (?, ?, ?, 'pending')
@@ -36,6 +40,7 @@ export function createReferral(referrerId: number, referredEmail: string, referr
 }
 
 export function completeReferral(referralCode: string, bonusAmount: number = 25.0) {
+  const db = getDb();
   const stmt = db.prepare(`
     UPDATE referrals 
     SET status = 'completed', bonus_amount = ?, completed_at = CURRENT_TIMESTAMP
@@ -45,6 +50,7 @@ export function completeReferral(referralCode: string, bonusAmount: number = 25.
 }
 
 export function getReferralsByUserId(userId: number) {
+  const db = getDb();
   const stmt = db.prepare(`
     SELECT * FROM referrals WHERE referrer_id = ? ORDER BY created_at DESC
   `);
@@ -61,6 +67,7 @@ export function getReferralsByUserId(userId: number) {
 }
 
 export function getTotalBonusByUserId(userId: number): number {
+  const db = getDb();
   const stmt = db.prepare(`
     SELECT SUM(bonus_amount) as total FROM referrals 
     WHERE referrer_id = ? AND status = 'completed'
