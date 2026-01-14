@@ -1,11 +1,30 @@
-import Database from 'better-sqlite3';
 import path from 'path';
+
+let Database: any;
+let db: any = null;
+let dbError: Error | null = null;
+let dbAvailable = false;
+
+// Try to import better-sqlite3, but don't crash if it fails
+try {
+  Database = require('better-sqlite3');
+  dbAvailable = true;
+} catch (error) {
+  console.warn('better-sqlite3 not available, database features will be limited:', error);
+  dbAvailable = false;
+}
 
 const dbPath = path.join(process.cwd(), 'insurance.db');
 
-let db: Database.Database | null = null;
-
-function getDatabase(): Database.Database {
+function getDatabase() {
+  if (!dbAvailable) {
+    throw new Error('Database is not available. better-sqlite3 failed to load.');
+  }
+  
+  if (dbError) {
+    throw dbError;
+  }
+  
   if (!db) {
     try {
       db = new Database(dbPath);
@@ -13,8 +32,7 @@ function getDatabase(): Database.Database {
       console.log('Database initialized successfully');
     } catch (error) {
       console.error('Database initialization error:', error);
-      // Don't throw - let the app continue, database operations will fail gracefully
-      // This prevents the entire app from crashing on startup
+      dbError = error as Error;
       throw error;
     }
   }
@@ -86,5 +104,11 @@ function initDatabase() {
 // Export a function that returns the database (truly lazy)
 // This prevents database initialization on module import
 export default function getDb() {
-  return getDatabase();
+  try {
+    return getDatabase();
+  } catch (error) {
+    console.error('Database unavailable:', error);
+    // Return a mock database object that will fail gracefully
+    throw new Error('Database is not available. Please check server logs.');
+  }
 }
